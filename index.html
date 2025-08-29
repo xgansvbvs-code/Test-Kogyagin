@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Тест: Геннадий Корягин</title>
+<style>
+  :root{--fg:#111;--bg:#fff;--muted:#666;--pri:#0a84ff;--ok:#0a7d28;--err:#b00020}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  .wrap{max-width:860px;margin:24px auto;padding:16px}
+  h1{font-size:22px;margin:0 0 6px}
+  .card{border:1px solid #e6e6e6;box-shadow:0 2px 12px rgba(0,0,0,.04);border-radius:12px;padding:16px;margin:12px 0}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  button{cursor:pointer;border:1px solid #ccc;border-radius:10px;padding:10px 14px;background:#f6f6f6}
+  button.primary{background:var(--pri);border-color:var(--pri);color:#fff}
+  button[disabled]{opacity:.5;cursor:not-allowed}
+  .muted{color:var(--muted);font-size:13px}
+  .qnum{font-weight:600}
+  .opts{display:grid;gap:10px;margin:12px 0}
+  .opt{border:1px solid #ddd;border-radius:10px;padding:10px}
+  .opt input{margin-right:8px}
+  .progress{height:8px;border-radius:6px;background:#eee;overflow:hidden}
+  .bar{height:100%;width:0;background:var(--pri);transition:width .25s}
+  .ok{color:var(--ok)} .err{color:var(--err)}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700}
+  .footer{display:flex;gap:8px;justify-content:space-between;align-items:center}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Персональный онлайн-тест: <span class="qnum">Геннадий Корягин</span></h1>
+  <p class="muted">25 вопросов. Время: <span class="timer" id="timer">25:00</span>. Вопросы скрыты до старта.</p>
+
+  <div class="card" id="startCard">
+    <p class="muted">Нажмите «Начать». Таймер запустится. Обратный отсчёт 25 минут. После истечения времени тест завершится автоматически.</p>
+    <div class="row">
+      <button class="primary" id="startBtn">Начать тест</button>
+      <button id="howBtn">Правила</button>
+    </div>
+    <details style="margin-top:8px">
+      <summary>Определения</summary>
+      <ul>
+        <li><strong>Валютная пара</strong> — котировка одной валюты к другой (EUR/USD).</li>
+        <li><strong>Спред</strong> — разница между Bid и Ask.</li>
+        <li><strong>Маржа</strong> — залог под открытую позицию.</li>
+        <li><strong>Плечо</strong> — отношение контролируемого объёма к капиталу.</li>
+      </ul>
+    </details>
+  </div>
+
+  <div class="card hidden" id="rulesCard">
+    <ul>
+      <li>Тестируемый: <strong>Геннадий Корягин</strong>.</li>
+      <li>Время: 25:00. По нулю — автозавершение.</li>
+      <li>Один ответ на вопрос. Назад нельзя.</li>
+      <li>Результат виден только в конце.</li>
+    </ul>
+  </div>
+
+  <div class="card hidden" id="quizCard">
+    <div class="row" style="justify-content:space-between">
+      <div><span class="qnum" id="qIdx">Вопрос 1/25</span></div>
+      <div style="min-width:220px;flex:1;margin-left:16px">
+        <div class="progress"><div class="bar" id="bar"></div></div>
+      </div>
+    </div>
+    <h2 id="qText" style="font-size:18px;margin:10px 0 6px"></h2>
+    <div class="opts" id="opts"></div>
+    <div class="footer">
+      <span class="muted" id="hint">Выберите один вариант</span>
+      <div class="row">
+        <button id="nextBtn" disabled>Далее</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="resultCard">
+    <h2>Результат: Геннадий Корягин</h2>
+    <p id="resTitle"></p>
+    <ul id="resList"></ul>
+    <p id="resScore" class="qnum"></p>
+    <div class="row">
+      <button id="restartBtn">Пройти ещё раз</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const questions = [
+ {q:"Какая валютная пара самая ликвидная?", a:["EUR/USD","GBP/USD","USD/CHF","AUD/USD"], c:"EUR/USD"},
+ {q:"Что такое лот на рынке?", a:["Объём стандартной сделки","Комиссия брокера","Таймфрейм","Кредитное плечо"], c:"Объём стандартной сделки"},
+ {q:"Что такое спред?", a:["Разница Bid и Ask","Кредитное плечо","Банковская комиссия","Проскальзывание"], c:"Разница Bid и Ask"},
+ {q:"Маржа — это…", a:["Залог под позицию","Чистая прибыль","Размер стопа","Тип ордера"], c:"Залог под позицию"},
+ {q:"Плечо 1:100 означает…", a:["Контролируете 100× капитала","Скидка 100%","Стоп равен 1%","Налог ×100"], c:"Контролируете 100× капитала"},
+ {q:"Стоп-лосс — это…", a:["Ордер ограничения убытка","Запрет на торговлю","Комиссия","Налог"], c:"Ордер ограничения убытка"},
+ {q:"Тейк-профит — это…", a:["Ордер фиксации прибыли","Дневной лимит","Проскальзывание","Лот"], c:"Ордер фиксации прибыли"},
+ {q:"Кто такие «быки»?", a:["Покупатели","Продавцы","Арбитражёры","Маркет-мейкеры"], c:"Покупатели"},
+ {q:"Кто такие «медведи»?", a:["Продавцы","Покупатели","Регуляторы","Инсайдеры"], c:"Продавцы"},
+ {q:"Ликвидность — это…", a:["Способность быстро купить/продать","Ставка ФРС","Объём лота","Срок свопа"], c:"Способность быстро купить/продать"},
+ {q:"Волатильность — это…", a:["Изменчивость цены","Комиссия","Нагрузка сервера","Экспирация"], c:"Изменчивость цены"},
+ {q:"Активнее всего USD/JPY в…", a:["Азиатскую сессию","Европейскую","Американскую","Выходные"], c:"Азиатскую сессию"},
+ {q:"Bid — цена, по которой вы можете…", a:["Продать","Купить","Выйти по среднерыночной","Выставить лимит"], c:"Продать"},
+ {q:"Ask — цена, по которой вы можете…", a:["Купить","Продать","Хеджировать","Свести спред"], c:"Купить"},
+ {q:"OCO-ордер — это…", a:["Исполнение одного отменяет другой","Две заявки исполняются вместе","Рыночный ордер","Стоп без лимита"], c:"Исполнение одного отменяет другой"},
+ {q:"Скользящая средняя (MA) — это…", a:["Индикатор сглаживания цены","Тип ордера","Регулятор","Налог"], c:"Индикатор сглаживания цены"},
+ {q:"Пробой сопротивления — это…", a:["Цена вышла выше уровня","Цена ниже уровня","Отскок","Флэт"], c:"Цена вышла выше уровня"},
+ {q:"Своп овернайт — это…", a:["Плата/начисление за перенос","Комиссия за ввод","Подарок брокера","Маржин-колл"], c:"Плата/начисление за перенос"},
+ {q:"NFP в календаре США — это…", a:["Отчёт по занятости вне с/х","Индекс инфляции","Решение ФРС","Доходность UST"], c:"Отчёт по занятости вне с/х"},
+ {q:"KYC/AML — это…", a:["Идентификация и борьба с отмыванием","Тип индикатора","Метод торговли","Вид свопа"], c:"Идентификация и борьба с отмыванием"},
+ {q:"При росте плеча прежде всего растёт…", a:["Риск убытка","Безрисковая ставка","Ликвидность","Комиссия биржи"], c:"Риск убытка"},
+ {q:"Проскальзывание — это…", a:["Исполнение по цене, отличной от ожидаемой","Уменьшение спреда","Ошибка трейдера","Налоговая льгота"], c:"Исполнение по цене, отличной от ожидаемой"},
+ {q:"Где безопаснее хранить средства?", a:["У регулируемого брокера с сегрегацией","У неличенз. дилера","На карте менеджера","В стейблкоине без ключей"], c:"У регулируемого брокера с сегрегацией"},
+ {q:"R:R = 1:2 означает…", a:["Потенциальная прибыль в 2 раза выше риска","Риск выше прибыли","Неинформативно","Размер свопа"], c:"Потенциальная прибыль в 2 раза выше риска"},
+ {q:"Главное правило риск-менеджмента…", a:["Сначала защитить капитал","Удваивать после убытков","Торговать без стопов","Игнорировать новости"], c:"Сначала защитить капитал"},
+];
+
+const $ = s => document.querySelector(s);
+function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function formatTime(sec){ const m=String(Math.floor(sec/60)).padStart(2,'0'); const s=String(sec%60).padStart(2,'0'); return `${m}:${s}`; }
+
+let idx=0, correct=0, answers=[], started=false, left=25*60, tick=null;
+
+function render(){
+  const q=questions[idx];
+  $("#qIdx").textContent=`Вопрос ${idx+1}/25`;
+  $("#qText").textContent=q.q;
+  const opts=shuffle(q.a);
+  const box=$("#opts"); box.innerHTML="";
+  opts.forEach((t,i)=>{
+    const id=`opt${i}`;
+    const div=document.createElement("label"); div.className="opt row";
+    div.innerHTML=`<input type="radio" name="o" id="${id}" value="${t}"><span>${t}</span>`;
+    box.appendChild(div);
+  });
+  $("#nextBtn").disabled=true;
+  $("#hint").textContent="Выберите один вариант";
+  box.addEventListener("change", ()=>{ $("#nextBtn").disabled=false; $("#hint").textContent="Ответ выбран"; }, {once:true});
+  $("#bar").style.width=`${(idx/25)*100}%`;
+}
+
+function startTimer(){
+  $("#timer").textContent = formatTime(left);
+  tick = setInterval(()=>{
+    left--; $("#timer").textContent = formatTime(Math.max(0,left));
+    if(left<=0){ clearInterval(tick); finish(true); }
+  },1000);
+}
+
+function finish(timeup=false){
+  $("#quizCard").classList.add("hidden");
+  $("#resultCard").classList.remove("hidden");
+  const percent = Math.round((correct/25)*100);
+  $("#resTitle").innerHTML = timeup ? "Время истекло. Тест завершён." : "Тест завершён.";
+  $("#resScore").textContent = `Верно: ${correct}/25 (${percent}%) · Оценка: ${percent>=70?"зачёт":"незачёт"}`;
+  const list = $("#resList"); list.innerHTML="";
+  questions.forEach((q,i)=>{
+    const li=document.createElement("li");
+    const ok = answers[i]===q.c;
+    li.innerHTML = `${i+1}. ${q.q} — <span class="${ok?"ok":"err"}">${ok?"верно":"неверно/нет ответа"}</span>`;
+    list.appendChild(li);
+  });
+}
+
+$("#startBtn").addEventListener("click",()=>{
+  if(started) return;
+  started=true;
+  $("#startCard").classList.add("hidden");
+  $("#rulesCard").classList.add("hidden");
+  $("#quizCard").classList.remove("hidden");
+  render();
+  startTimer();
+});
+$("#howBtn").addEventListener("click",()=>{
+  $("#rulesCard").classList.toggle("hidden");
+});
+$("#nextBtn").addEventListener("click", ()=>{
+  const chosen = document.querySelector('input[name="o"]:checked');
+  if(!chosen) return;
+  const val = chosen.value;
+  answers[idx]=val;
+  if(val===questions[idx].c) correct++;
+  idx++;
+  if(idx<questions.length){ render(); }
+  else { clearInterval(tick); $("#bar").style.width="100%"; finish(false); }
+});
+$("#restartBtn").addEventListener("click", ()=>{ location.reload(); });
+</script>
+</body>
+</html>
